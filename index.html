@@ -371,17 +371,17 @@ function downloadPDF() {
   <tbody>${tableRows}</tbody></table>
   <script>window.onload=()=>{window.print();}<\/script></body></html>`;
 
-const blob = new Blob([html], {type:‘text/html’});
+const blob = new Blob([html], {type:'text/html'});
 const url = URL.createObjectURL(blob);
-const a = document.createElement(‘a’);
-a.href = url; a.download = ‘loan_repayment_schedule.html’; a.click();
+const a = document.createElement('a');
+a.href = url; a.download = 'loan_repayment_schedule.html'; a.click();
 URL.revokeObjectURL(url);
 }
 
 window.onload = function() {
-  [‘loanAmt’,‘outstanding’,‘rate’,‘tenure’,‘emi’,‘stepupPct’,‘extra’,‘yearlyLump’,‘yearlyMonth’,‘yearlyStart’,‘yearlyGrowth’].forEach(id => {
-    document.getElementById(id).addEventListener(‘input’, calculate);
-    document.getElementById(id).addEventListener(‘change’, calculate);
+  ['loanAmt','outstanding','rate','tenure','emi','stepupPct','extra','yearlyLump','yearlyMonth','yearlyStart','yearlyGrowth'].forEach(id => {
+    document.getElementById(id).addEventListener('input', calculate);
+    document.getElementById(id).addEventListener('change', calculate);
   });
   calculate();
 };
