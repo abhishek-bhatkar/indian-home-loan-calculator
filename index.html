@@ -378,11 +378,13 @@ a.href = url; a.download = ‘loan_repayment_schedule.html’; a.click();
 URL.revokeObjectURL(url);
 }
 
-[‘loanAmt’,‘outstanding’,‘rate’,‘tenure’,‘emi’,‘stepupPct’,‘extra’,‘yearlyLump’,‘yearlyMonth’,‘yearlyStart’,‘yearlyGrowth’].forEach(id => {
-document.getElementById(id).addEventListener(‘input’, calculate);
-document.getElementById(id).addEventListener(‘change’, calculate);
-});
-calculate();
+window.onload = function() {
+  [‘loanAmt’,‘outstanding’,‘rate’,‘tenure’,‘emi’,‘stepupPct’,‘extra’,‘yearlyLump’,‘yearlyMonth’,‘yearlyStart’,‘yearlyGrowth’].forEach(id => {
+    document.getElementById(id).addEventListener(‘input’, calculate);
+    document.getElementById(id).addEventListener(‘change’, calculate);
+  });
+  calculate();
+};
 </script>
 
 </body>
