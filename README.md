@@ -1,5 +1,7 @@
 # 🏠 Indian Home Loan Calculator
 
+**🔗 Live demo → [abhishek-bhatkar.github.io/indian-home-loan-calculator](https://abhishek-bhatkar.github.io/indian-home-loan-calculator/)**
+
 A single-file, zero-dependency web app for planning and optimising your Indian home loan repayment. Works entirely in the browser — no server, no sign-up, no data sent anywhere.
 
 ## Features
