@@ -56,11 +56,24 @@
   .stepup-preview td { padding: 3px 6px; }
   .stepup-preview td:last-child { text-align: right; font-weight: 500; color: #1a1a18; }
   #errorMsg { display: none; color: #E24B4A; font-size: 13px; padding: 8px 0; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px; }
+  .header-row h1 { margin: 0; }
+  .header-controls { display: flex; align-items: center; gap: 10px; }
+  .save-indicator { font-size: 11px; color: #0F6E56; background: #E1F5EE; border-radius: 20px; padding: 3px 10px; opacity: 0; transition: opacity 0.4s; }
+  .save-indicator.visible { opacity: 1; }
+  .clear-btn { font-size: 12px; color: #888780; background: none; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 5px 12px; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
+  .clear-btn:hover { color: #E24B4A; border-color: #E24B4A; }
 </style>
 </head>
 <body>
 <div class="container">
-<h1>Home loan calculator</h1>
+<div class="header-row">
+  <h1>Home loan calculator</h1>
+  <div class="header-controls">
+    <span class="save-indicator" id="saveIndicator">✓ Saved</span>
+    <button class="clear-btn" id="clearBtn" onclick="clearSavedData()" style="display:none;">Clear saved data</button>
+  </div>
+</div>
 
 <div class="section">
   <p class="section-title">Loan details</p>
@@ -156,17 +169,68 @@ const inrCr = v => {
 };
 
 let chart, fullSchedule = [], showAll = false, lumpRows = [];
+const LS_KEY = 'indianHomeLoanCalc_v1';
 
-function addLumpRow(amt=0, mo=1) {
+function saveToLocalStorage() {
+  const data = {
+    fields: {},
+    lumps: []
+  };
+  ['loanAmt','outstanding','rate','tenure','emi','stepupPct','extra','yearlyLump','yearlyMonth','yearlyStart','yearlyGrowth'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data.fields[id] = el.value;
+  });
+  lumpRows.forEach(id => {
+    data.lumps.push({
+      id,
+      amt: document.getElementById('la-'+id)?.value || '0',
+      mo: document.getElementById('lm-'+id)?.value || '1',
+      label: document.getElementById('ll-'+id)?.value || ''
+    });
+  });
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+    const ind = document.getElementById('saveIndicator');
+    if (ind) { ind.classList.add('visible'); clearTimeout(ind._t); ind._t = setTimeout(() => ind.classList.remove('visible'), 2000); }
+    const clearBtn = document.getElementById('clearBtn');
+    if (clearBtn) clearBtn.style.display = 'inline-block';
+  } catch(e) {}
+}
+
+function loadFromLocalStorage() {
+  let data;
+  try { data = JSON.parse(localStorage.getItem(LS_KEY)); } catch(e) {}
+  if (!data) return false;
+  if (data.fields) {
+    Object.entries(data.fields).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+  }
+  if (data.lumps && data.lumps.length > 0) {
+    data.lumps.forEach(l => addLumpRow(l.amt, l.mo, l.label));
+  }
+  const clearBtn = document.getElementById('clearBtn');
+  if (clearBtn) clearBtn.style.display = 'inline-block';
+  return true;
+}
+
+function clearSavedData() {
+  if (!confirm('Clear all saved data and reset to defaults?')) return;
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  location.reload();
+}
+
+function addLumpRow(amt=0, mo=1, lbl='') {
   const id = Date.now();
   lumpRows.push(id);
   const container = document.getElementById('lumpsumRows');
   const div = document.createElement('div');
   div.className = 'lump-row'; div.id = 'lr-' + id;
   div.innerHTML = `
-    <div class="field"><label>Amount (₹)</label><div class="prefix-wrap"><span class="prefix">₹</span><input type="number" id="la-${id}" value="${amt}" step="10000" min="0" style="padding-left:22px;" oninput="calculate()"></div></div>
-    <div class="field"><label>In month #</label><input type="number" id="lm-${id}" value="${mo}" step="1" min="1" oninput="calculate()"></div>
-    <div class="field"><label>Label (optional)</label><input type="text" id="ll-${id}" placeholder="e.g. Bonus" oninput="calculate()"></div>
+    <div class="field"><label>Amount (₹)</label><div class="prefix-wrap"><span class="prefix">₹</span><input type="number" id="la-${id}" value="${amt}" step="10000" min="0" style="padding-left:22px;" oninput="calculate();saveToLocalStorage()"></div></div>
+    <div class="field"><label>In month #</label><input type="number" id="lm-${id}" value="${mo}" step="1" min="1" oninput="calculate();saveToLocalStorage()"></div>
+    <div class="field"><label>Label (optional)</label><input type="text" id="ll-${id}" value="${lbl}" placeholder="e.g. Bonus" oninput="calculate();saveToLocalStorage()"></div>
     <button class="remove-btn" onclick="removeLump(${id})">×</button>`;
   container.appendChild(div);
   calculate();
@@ -177,6 +241,7 @@ function removeLump(id) {
   const el = document.getElementById('lr-' + id);
   if(el) el.remove();
   calculate();
+  saveToLocalStorage();
 }
 
 function calcEMI(p, r, n) {
@@ -379,11 +444,19 @@ URL.revokeObjectURL(url);
 }
 
 window.onload = function() {
-  ['loanAmt','outstanding','rate','tenure','emi','stepupPct','extra','yearlyLump','yearlyMonth','yearlyStart','yearlyGrowth'].forEach(id => {
-    document.getElementById(id).addEventListener('input', calculate);
-    document.getElementById(id).addEventListener('change', calculate);
+  const fieldIds = ['loanAmt','outstanding','rate','tenure','emi','stepupPct','extra','yearlyLump','yearlyMonth','yearlyStart','yearlyGrowth'];
+  const restored = loadFromLocalStorage();
+  fieldIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => { calculate(); saveToLocalStorage(); });
+    el.addEventListener('change', () => { calculate(); saveToLocalStorage(); });
   });
   calculate();
+  if (restored) {
+    const ind = document.getElementById('saveIndicator');
+    if (ind) { ind.textContent = '✓ Restored'; ind.classList.add('visible'); clearTimeout(ind._t); ind._t = setTimeout(() => { ind.classList.remove('visible'); ind.textContent = '✓ Saved'; }, 2500); }
+  }
 };
 </script>
 
