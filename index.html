@@ -7,81 +7,133 @@
 <title>Indian Home Loan Calculator</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
+  :root {
+    --bg: #f5f5f3; --surface: #fff; --surface2: #f7f6f2; --surface3: #f1efe8;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.25); --border3: rgba(0,0,0,0.08);
+    --text: #1a1a18; --text2: #5f5e5a; --text3: #888780;
+    --blue: #185FA5; --bluebg: #E6F1FB; --bluebg2: #B5D4F4; --bluehi: #378ADD;
+    --green: #0F6E56; --greenbg: #E1F5EE; --greendark: #085041;
+    --coral: #993C1D; --coralhi: #D85A30;
+    --red: #E24B4A;
+    --highlight-bg: #E1F5EE;
+  }
+  [data-theme='dark'] {
+    --bg: #141412; --surface: #1e1e1b; --surface2: #272724; --surface3: #2e2e2a;
+    --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2); --border3: rgba(255,255,255,0.06);
+    --text: #e8e7e1; --text2: #9e9d97; --text3: #6b6a65;
+    --blue: #5baef0; --bluebg: rgba(91,174,240,0.12); --bluebg2: rgba(91,174,240,0.22); --bluehi: #5baef0;
+    --green: #3fcf9a; --greenbg: rgba(63,207,154,0.12); --greendark: #3fcf9a;
+    --coral: #e8876a; --coralhi: #e8876a;
+    --red: #f06a6a;
+    --highlight-bg: rgba(63,207,154,0.12);
+  }
   *, *::before, *::after { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a18; margin: 0; padding: 1.5rem; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 1.5rem; transition: background 0.3s, color 0.3s; }
   .container { max-width: 860px; margin: 0 auto; }
-  h1 { font-size: 20px; font-weight: 500; margin: 0 0 1.25rem; }
-  .section { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
-  .section-title { font-size: 13px; font-weight: 500; color: #5f5e5a; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  h1 { font-size: 20px; font-weight: 500; margin: 0; }
+  .section { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--text2); margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+  .section-title .chevron { transition: transform 0.2s; font-style: normal; font-size: 10px; color: var(--text3); }
+  .section-body { overflow: hidden; transition: max-height 0.3s ease; }
+  .section.collapsed .section-body { max-height: 0 !important; }
+  .section.collapsed .chevron { transform: rotate(-90deg); }
   .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
   .field { display: flex; flex-direction: column; gap: 5px; }
-  .field label { font-size: 12px; color: #5f5e5a; }
-  .field input, .field select { height: 36px; border-radius: 8px; border: 0.5px solid rgba(0,0,0,0.25); background: #fff; color: #1a1a18; padding: 0 10px; font-size: 14px; width: 100%; }
-  .field input:focus, .field select:focus { outline: none; border-color: #378ADD; box-shadow: 0 0 0 2px rgba(55,138,221,0.15); }
+  .field label { font-size: 12px; color: var(--text2); }
+  .field input, .field select { height: 36px; border-radius: 8px; border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); padding: 0 10px; font-size: 14px; width: 100%; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--bluehi); box-shadow: 0 0 0 2px rgba(55,138,221,0.15); }
   .prefix-wrap { position: relative; }
-  .prefix-wrap .prefix { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #888780; pointer-events: none; }
+  .prefix-wrap .prefix { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--text3); pointer-events: none; }
   .prefix-wrap input { padding-left: 22px; }
   .cards-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1rem; }
   @media(max-width:600px){ .cards-4 { grid-template-columns: repeat(2, 1fr); } }
-  .mcard { background: #f1efe8; border-radius: 8px; padding: 0.75rem 1rem; }
-  .mcard-label { font-size: 11px; color: #5f5e5a; margin: 0 0 4px; }
-  .mcard-value { font-size: 17px; font-weight: 500; margin: 0; color: #1a1a18; }
-  .mcard-value.blue { color: #185FA5; }
-  .mcard-value.coral { color: #993C1D; }
-  .highlight-card { background: #E1F5EE; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-  .highlight-left .hl { font-size: 13px; color: #0F6E56; margin: 0 0 4px; }
-  .highlight-left .date { font-size: 28px; font-weight: 500; color: #085041; margin: 0; }
+  .mcard { background: var(--surface3); border-radius: 8px; padding: 0.75rem 1rem; }
+  .mcard-label { font-size: 11px; color: var(--text2); margin: 0 0 4px; }
+  .mcard-value { font-size: 17px; font-weight: 500; margin: 0; color: var(--text); }
+  .mcard-value.blue { color: var(--blue); }
+  .mcard-value.coral { color: var(--coral); }
+  .highlight-card { background: var(--highlight-bg); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .highlight-left .hl { font-size: 13px; color: var(--green); margin: 0 0 4px; }
+  .highlight-left .date { font-size: 28px; font-weight: 500; color: var(--greendark); margin: 0; }
   .highlight-right { text-align: right; }
-  .highlight-right .savings-label { font-size: 12px; color: #0F6E56; margin: 0 0 2px; }
-  .highlight-right .savings-val { font-size: 22px; font-weight: 500; color: #085041; margin: 0; }
-  .legend { display: flex; gap: 16px; font-size: 12px; color: #5f5e5a; margin-bottom: 6px; flex-wrap: wrap; }
+  .highlight-right .savings-label { font-size: 12px; color: var(--green); margin: 0 0 2px; }
+  .highlight-right .savings-val { font-size: 22px; font-weight: 500; color: var(--greendark); margin: 0; }
+  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--text2); margin-bottom: 6px; flex-wrap: wrap; }
   .legend span { display: flex; align-items: center; gap: 5px; }
   .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-  .toggle-btn { font-size: 12px; color: #185FA5; background: none; border: none; cursor: pointer; padding: 0; margin-top: 6px; text-decoration: underline; }
+  .toggle-btn { font-size: 12px; color: var(--blue); background: none; border: none; cursor: pointer; padding: 0; margin-top: 6px; text-decoration: underline; }
   table.schedule { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
-  table.schedule th { text-align: left; padding: 6px 8px; border-bottom: 0.5px solid rgba(0,0,0,0.2); color: #5f5e5a; font-weight: 500; }
-  table.schedule td { padding: 5px 8px; border-bottom: 0.5px solid rgba(0,0,0,0.08); color: #1a1a18; }
+  table.schedule th { text-align: left; padding: 6px 8px; border-bottom: 0.5px solid var(--border2); color: var(--text2); font-weight: 500; }
+  table.schedule td { padding: 5px 8px; border-bottom: 0.5px solid var(--border3); color: var(--text); }
   table.schedule tr:last-child td { border-bottom: none; }
   .lump-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; margin-bottom: 10px; }
-  .remove-btn { height: 36px; width: 36px; border-radius: 8px; border: 0.5px solid rgba(0,0,0,0.2); background: #fff; color: #888780; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .remove-btn:hover { color: #E24B4A; }
-  .add-btn { font-size: 13px; color: #185FA5; background: #E6F1FB; border: none; border-radius: 8px; padding: 6px 14px; cursor: pointer; margin-top: 4px; }
-  .add-btn:hover { background: #B5D4F4; }
-  .badge { display: inline-flex; align-items: center; background: #E1F5EE; color: #0F6E56; border-radius: 20px; padding: 2px 10px; font-size: 11px; margin-left: 8px; }
-  .badge-blue { background: #E6F1FB; color: #185FA5; }
-  .pdf-btn { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: #185FA5; background: #E6F1FB; border: 0.5px solid rgba(55,138,221,0.3); border-radius: 8px; padding: 8px 16px; cursor: pointer; margin-bottom: 1rem; }
-  .pdf-btn:hover { background: #B5D4F4; }
-  .stepup-preview { margin-top: 10px; background: #f1efe8; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #5f5e5a; display: none; }
+  .remove-btn { height: 36px; width: 36px; border-radius: 8px; border: 0.5px solid var(--border2); background: var(--surface); color: var(--text3); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .remove-btn:hover { color: var(--red); }
+  .add-btn { font-size: 13px; color: var(--blue); background: var(--bluebg); border: none; border-radius: 8px; padding: 6px 14px; cursor: pointer; margin-top: 4px; }
+  .add-btn:hover { background: var(--bluebg2); }
+  .badge { display: inline-flex; align-items: center; background: var(--greenbg); color: var(--green); border-radius: 20px; padding: 2px 10px; font-size: 11px; margin-left: 8px; }
+  .badge-blue { background: var(--bluebg); color: var(--blue); }
+  .pdf-btn { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--blue); background: var(--bluebg); border: 0.5px solid rgba(55,138,221,0.3); border-radius: 8px; padding: 8px 16px; cursor: pointer; margin-bottom: 1rem; }
+  .pdf-btn:hover { background: var(--bluebg2); }
+  .stepup-preview { margin-top: 10px; background: var(--surface3); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text2); display: none; }
   .stepup-preview table { width: 100%; border-collapse: collapse; }
   .stepup-preview td { padding: 3px 6px; }
-  .stepup-preview td:last-child { text-align: right; font-weight: 500; color: #1a1a18; }
-  #errorMsg { display: none; color: #E24B4A; font-size: 13px; padding: 8px 0; }
+  .stepup-preview td:last-child { text-align: right; font-weight: 500; color: var(--text); }
+  #errorMsg { display: none; color: var(--red); font-size: 13px; padding: 8px 0; }
+  /* Header */
   .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px; }
-  .header-row h1 { margin: 0; }
   .header-controls { display: flex; align-items: center; gap: 10px; }
-  .save-indicator { font-size: 11px; color: #0F6E56; background: #E1F5EE; border-radius: 20px; padding: 3px 10px; opacity: 0; transition: opacity 0.4s; }
+  .save-indicator { font-size: 11px; color: var(--green); background: var(--greenbg); border-radius: 20px; padding: 3px 10px; opacity: 0; transition: opacity 0.4s; }
   .save-indicator.visible { opacity: 1; }
-  .clear-btn { font-size: 12px; color: #888780; background: none; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 5px 12px; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
-  .clear-btn:hover { color: #E24B4A; border-color: #E24B4A; }
+  .clear-btn { font-size: 12px; color: var(--text3); background: none; border: 0.5px solid var(--border2); border-radius: 8px; padding: 5px 12px; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
+  .clear-btn:hover { color: var(--red); border-color: var(--red); }
+  .theme-btn { width: 32px; height: 32px; border-radius: 8px; border: 0.5px solid var(--border2); background: var(--surface); color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: background 0.2s; }
+  .theme-btn:hover { background: var(--surface3); }
   /* Bookmarks */
-  .bm-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #185FA5; background: #E6F1FB; border: 0.5px solid rgba(55,138,221,0.3); border-radius: 8px; padding: 5px 12px; cursor: pointer; transition: background 0.2s; }
-  .bm-btn:hover { background: #B5D4F4; }
-  .bm-panel { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: none; }
+  .bm-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--blue); background: var(--bluebg); border: 0.5px solid rgba(55,138,221,0.3); border-radius: 8px; padding: 5px 12px; cursor: pointer; transition: background 0.2s; }
+  .bm-btn:hover { background: var(--bluebg2); }
+  .bm-panel { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: none; }
   .bm-panel.open { display: block; }
   .bm-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .bm-panel-title { font-size: 13px; font-weight: 500; color: #5f5e5a; text-transform: uppercase; letter-spacing: 0.04em; margin: 0; }
-  .bm-empty { font-size: 13px; color: #888780; padding: 8px 0; }
+  .bm-panel-title { font-size: 13px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; margin: 0; }
+  .bm-empty { font-size: 13px; color: var(--text3); padding: 8px 0; }
   .bm-list { display: flex; flex-direction: column; gap: 8px; }
-  .bm-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f7f6f2; border-radius: 10px; padding: 10px 14px; transition: background 0.15s; }
-  .bm-card:hover { background: #f1efe8; }
+  .bm-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface2); border-radius: 10px; padding: 10px 14px; transition: background 0.15s; }
+  .bm-card:hover { background: var(--surface3); }
   .bm-card-left { flex: 1; min-width: 0; }
-  .bm-name { font-size: 14px; font-weight: 500; color: #1a1a18; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bm-meta { font-size: 11px; color: #888780; margin-top: 2px; }
+  .bm-name { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bm-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
   .bm-actions { display: flex; gap: 6px; flex-shrink: 0; }
-  .bm-load-btn { font-size: 12px; font-weight: 500; color: #185FA5; background: #E6F1FB; border: none; border-radius: 7px; padding: 5px 12px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
-  .bm-load-btn:hover { background: #B5D4F4; }
-  .bm-del-btn { font-size: 16px; color: #888780; background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 6px; line-height: 1; transition: color 0.15s; }
-  .bm-del-btn:hover { color: #E24B4A; }
+  .bm-load-btn { font-size: 12px; font-weight: 500; color: var(--blue); background: var(--bluebg); border: none; border-radius: 7px; padding: 5px 12px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+  .bm-load-btn:hover { background: var(--bluebg2); }
+  .bm-del-btn { font-size: 16px; color: var(--text3); background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 6px; line-height: 1; transition: color 0.15s; }
+  .bm-del-btn:hover { color: var(--red); }
+  /* Insights */
+  .insight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .insight-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .icard { background: var(--surface2); border-radius: 10px; padding: 12px 14px; }
+  .icard-label { font-size: 11px; color: var(--text2); margin: 0 0 4px; }
+  .icard-value { font-size: 16px; font-weight: 500; color: var(--text); margin: 0; }
+  .icard-value.green { color: var(--green); }
+  .verdict-card { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; font-size: 13px; }
+  .verdict-card.good { background: var(--greenbg); color: var(--greendark); }
+  .verdict-card.neutral { background: var(--surface3); color: var(--text2); }
+  .verdict-card b { font-weight: 600; }
+  .insight-toggle { font-size: 12px; color: var(--blue); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; margin-top: 6px; }
+  table.tax-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  table.tax-table th { text-align: right; padding: 5px 8px; border-bottom: 0.5px solid var(--border2); color: var(--text2); font-weight: 500; }
+  table.tax-table th:first-child { text-align: left; }
+  table.tax-table td { padding: 4px 8px; border-bottom: 0.5px solid var(--border3); text-align: right; color: var(--text); }
+  table.tax-table td:first-child { text-align: left; }
+  table.tax-table tr:last-child td { border-bottom: none; }
+  /* Compare */
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  .cmp-table th { padding: 6px 10px; background: var(--surface3); color: var(--text2); font-weight: 500; text-align: right; }
+  .cmp-table th:first-child { text-align: left; border-radius: 8px 0 0 0; }
+  .cmp-table th:last-child { border-radius: 0 8px 0 0; }
+  .cmp-table td { padding: 7px 10px; border-bottom: 0.5px solid var(--border3); color: var(--text); text-align: right; }
+  .cmp-table td:first-child { text-align: left; color: var(--text2); }
+  .cmp-winner { color: var(--green); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -90,8 +142,9 @@
   <h1>Home loan calculator</h1>
   <div class="header-controls">
     <span class="save-indicator" id="saveIndicator">✓ Saved</span>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
     <button class="bm-btn" id="bookmarkToggleBtn" onclick="toggleBookmarkPanel()">
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 1.5h9v10.5l-4.5-2.5L2 12V1.5z" stroke="#185FA5" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg>
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 1.5h9v10.5l-4.5-2.5L2 12V1.5z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg>
       Scenarios
     </button>
     <button class="clear-btn" id="clearBtn" onclick="clearSavedData()" style="display:none;">Clear saved data</button>
@@ -101,45 +154,59 @@
 <div class="bm-panel" id="bmPanel">
   <div class="bm-panel-header">
     <p class="bm-panel-title">Saved scenarios</p>
-    <button class="bm-btn" onclick="saveBookmark()">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="#185FA5" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <button class="bm-btn" onclick="toggleSaveForm()">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Save current
     </button>
+  </div>
+  <div id="bmSaveForm" style="display:none; margin-bottom:12px;">
+    <div style="display:flex; gap:8px; align-items:center;">
+      <input type="text" id="bmNameInput" placeholder="Scenario name (e.g. Aggressive prepayment)" style="flex:1; height:36px; border-radius:8px; border:0.5px solid var(--border2); background:var(--surface); color:var(--text); padding:0 10px; font-size:13px;">
+      <button class="bm-load-btn" onclick="saveBookmark()">Save</button>
+      <button class="bm-del-btn" onclick="toggleSaveForm()" title="Cancel" style="font-size:20px;">×</button>
+    </div>
   </div>
   <div id="bmList"><p class="bm-empty">No saved scenarios yet. Configure your inputs and click "Save current".</p></div>
 </div>
 
-<div class="section">
-  <p class="section-title">Loan details</p>
+<div class="section" id="sec-loan">
+  <p class="section-title" onclick="toggleSection('sec-loan')">Loan details <i class="chevron">▾</i></p>
+  <div class="section-body">
   <div class="field-grid">
     <div class="field"><label>Loan amount (₹)</label><div class="prefix-wrap"><span class="prefix">₹</span><input type="number" id="loanAmt" value="5000000" step="100000"></div></div>
     <div class="field"><label>Outstanding balance (₹)</label><div class="prefix-wrap"><span class="prefix">₹</span><input type="number" id="outstanding" value="4200000" step="100000"></div></div>
     <div class="field"><label>Annual interest rate (%)</label><input type="number" id="rate" value="8.5" step="0.1" min="1" max="30"></div>
     <div class="field"><label>Original tenure (years)</label><input type="number" id="tenure" value="20" step="1" min="1" max="30"></div>
   </div>
+  </div>
 </div>
 
-<div class="section">
-  <p class="section-title">EMI & step-up <span class="badge badge-blue">salary growth</span></p>
+<div class="section" id="sec-emi">
+  <p class="section-title" onclick="toggleSection('sec-emi')">EMI & step-up <span class="badge badge-blue">salary growth</span> <i class="chevron">▾</i></p>
+  <div class="section-body">
   <div class="field-grid">
     <div class="field"><label>Starting EMI (₹) — auto or override</label><div class="prefix-wrap"><span class="prefix">₹</span><input type="number" id="emi" placeholder="Auto-calculated" step="100"></div></div>
     <div class="field"><label>Step-up EMI by (%) every year</label><input type="number" id="stepupPct" value="0" step="1" min="0" max="50" placeholder="0 = flat EMI"></div>
     <div class="field"><label>Extra flat monthly payment (₹)</label><div class="prefix-wrap"><span class="prefix">₹</span><input type="number" id="extra" value="0" step="500" min="0"></div></div>
   </div>
   <div class="stepup-preview" id="stepupPreview">
-    <div style="margin-bottom:6px; font-weight:500; color:#1a1a18;">EMI schedule by year</div>
+    <div style="margin-bottom:6px; font-weight:500;">EMI schedule by year</div>
     <table id="stepupTable"></table>
+  </div>
   </div>
 </div>
 
-<div class="section">
-  <p class="section-title">One-time lump sum payments</p>
+<div class="section" id="sec-lump">
+  <p class="section-title" onclick="toggleSection('sec-lump')">One-time lump sum payments <i class="chevron">▾</i></p>
+  <div class="section-body">
   <div id="lumpsumRows"></div>
   <button class="add-btn" onclick="addLumpRow()">+ Add lump sum</button>
+  </div>
 </div>
 
-<div class="section">
-  <p class="section-title">Yearly lump sum <span class="badge">recurring</span></p>
+<div class="section" id="sec-yearly">
+  <p class="section-title" onclick="toggleSection('sec-yearly')">Yearly lump sum <span class="badge">recurring</span> <i class="chevron">▾</i></p>
+  <div class="section-body">
   <div class="field-grid">
     <div class="field"><label>Amount per year (₹)</label><div class="prefix-wrap"><span class="prefix">₹</span><input type="number" id="yearlyLump" value="0" step="10000" min="0"></div></div>
     <div class="field"><label>Pay every year in month</label>
@@ -152,6 +219,33 @@
     </div>
     <div class="field"><label>Starting from year #</label><input type="number" id="yearlyStart" value="1" min="1" step="1"></div>
     <div class="field"><label>Increase per year (%)</label><input type="number" id="yearlyGrowth" value="0" step="1" min="0" max="50"></div>
+  </div>
+  </div>
+</div>
+
+<div class="section" id="sec-insights-cfg">
+  <p class="section-title" onclick="toggleSection('sec-insights-cfg')">Insights & analysis <span class="badge badge-blue">new</span> <i class="chevron">▾</i></p>
+  <div class="section-body">
+  <div class="field-grid">
+    <div class="field"><label>Tax slab (%)</label>
+      <select id="taxSlab">
+        <option value="0">Not applicable</option>
+        <option value="5">5% slab</option>
+        <option value="20">20% slab</option>
+        <option value="30" selected>30% slab (old regime)</option>
+      </select>
+    </div>
+    <div class="field"><label>Loan type</label>
+      <select id="loanType">
+        <option value="so" selected>Self-occupied (24b cap ₹2L/yr)</option>
+        <option value="lo">Let-out (unlimited deduction)</option>
+      </select>
+    </div>
+    <div class="field"><label>Expected investment return (% p.a.)</label><input type="number" id="investReturn" value="12" step="0.5" min="0" max="50"></div>
+    <div class="field"><label>Compare with saved scenario</label>
+      <select id="cmpScenario"><option value="">— Select a scenario —</option></select>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -174,12 +268,19 @@
   <div style="position:relative;width:100%;height:260px;margin-bottom:1rem;"><canvas id="loanChart"></canvas></div>
 
   <button class="pdf-btn" onclick="downloadPDF()">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 2h7l3 3v9H3V2z" stroke="#185FA5" stroke-width="1" fill="none"/><path d="M10 2v3h3" stroke="#185FA5" stroke-width="1" fill="none"/><path d="M5 8h6M5 10.5h4" stroke="#185FA5" stroke-width="1" stroke-linecap="round"/></svg>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1" fill="none"/><path d="M10 2v3h3" stroke="currentColor" stroke-width="1" fill="none"/><path d="M5 8h6M5 10.5h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
     Download PDF schedule
   </button>
 
+  <div class="section" id="insightsPanel" style="display:none;">
+    <p class="section-title" onclick="toggleSection('insightsPanel')" style="cursor:pointer;">Insights <span id="insightsBadge" class="badge badge-blue"></span> <i class="chevron">▾</i></p>
+    <div class="section-body" id="insightsBody">
+      <div id="insightsContent"></div>
+    </div>
+  </div>
+
   <div class="section">
-    <p class="section-title" style="margin-bottom:8px;">Repayment schedule <span id="showingLabel" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:#5f5e5a;"></span></p>
+    <p class="section-title" style="margin-bottom:8px; cursor:default;">Repayment schedule <span id="showingLabel" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text3);"></span></p>
     <div style="overflow-x:auto;">
       <table class="schedule">
         <thead><tr><th>Month</th><th>Date</th><th>EMI</th><th>Principal</th><th>Interest</th><th>Prepayment</th><th>Balance</th></tr></thead>
@@ -206,7 +307,148 @@ let chart, fullSchedule = [], showAll = false, lumpRows = [];
 const LS_KEY = 'indianHomeLoanCalc_v1';
 const BM_KEY = 'indianHomeLoanCalc_bookmarks_v1';
 
+/* ── Dark mode ────────────────────────────────── */
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : '');
+  document.getElementById('themeBtn').textContent = dark ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') !== 'dark';
+  applyTheme(next);
+  try { localStorage.setItem('hlc_theme', next ? 'dark' : ''); } catch(e) {}
+}
+
+/* ── Collapsible sections ─────────────────────── */
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('collapsed');
+  const body = el.querySelector('.section-body');
+  if (body) body.style.maxHeight = el.classList.contains('collapsed') ? '0' : (body.scrollHeight + 500) + 'px';
+  try { sessionStorage.setItem('sec_' + id, el.classList.contains('collapsed') ? '1' : '0'); } catch(e) {}
+}
+function initSectionStates() {
+  ['sec-loan','sec-emi','sec-lump','sec-yearly','sec-insights-cfg'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const body = el.querySelector('.section-body');
+    if (body) body.style.maxHeight = (body.scrollHeight + 500) + 'px';
+    try { if (sessionStorage.getItem('sec_' + id) === '1') { el.classList.add('collapsed'); if (body) body.style.maxHeight = '0'; } } catch(e) {}
+  });
+}
+
+/* ── Scenario mini-calc ──────────────────────── */
+function runCalcOn(fields, lumpsData) {
+  let balance = parseFloat(fields.outstanding) || 0;
+  const rate = parseFloat(fields.rate) || 0, tenure = parseInt(fields.tenure) || 0;
+  if (!balance || !rate || !tenure) return null;
+  const mr = rate/12/100, n = tenure*12;
+  const autoEMI = balance*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);
+  const baseEMI = (parseFloat(fields.emi)||0) > 0 ? parseFloat(fields.emi) : autoEMI;
+  const stepupPct = parseFloat(fields.stepupPct)||0, extraMonthly = parseFloat(fields.extra)||0;
+  const yearlyLump = parseFloat(fields.yearlyLump)||0, yearlyMonth = parseInt(fields.yearlyMonth)||5;
+  const yearlyStart = parseInt(fields.yearlyStart)||1, yearlyGrowth = parseFloat(fields.yearlyGrowth)||0;
+  const lumps = (lumpsData||[]).map(l=>({amount:parseFloat(l.amt)||0,month:parseInt(l.mo)||1}));
+  let bal = balance, month = 0, totalInterest = 0;
+  while (bal > 0.5 && month < 600) {
+    month++;
+    const yr = Math.ceil(month/12), emi = baseEMI*Math.pow(1+stepupPct/100,yr-1);
+    const ic = bal*mr; let pp = Math.min(emi-ic,bal); if(pp<0)pp=0;
+    let pre = extraMonthly;
+    lumps.forEach(l=>{if(l.month===month)pre+=l.amount;});
+    if(yearlyLump>0){const miy=((month-1)%12)+1;if(yr>=yearlyStart&&miy===yearlyMonth)pre+=yearlyLump*Math.pow(1+yearlyGrowth/100,yr-yearlyStart);}
+    pre=Math.min(pre,Math.max(0,bal-pp));
+    bal=Math.max(0,bal-pp-pre); totalInterest+=ic;
+  }
+  const saved=(autoEMI*n-balance)-totalInterest;
+  return {months:month,totalInterest,interestSaved:saved,emi:baseEMI};
+}
+
+/* ── Populate compare dropdown ───────────────── */
+function populateCmpDropdown() {
+  const sel = document.getElementById('cmpScenario'); if (!sel) return;
+  const cur = sel.value; sel.innerHTML = '<option value="">— Select a scenario —</option>';
+  getBookmarks().forEach(bm=>{ const o=document.createElement('option'); o.value=bm.id; o.textContent=bm.name; if(String(bm.id)===cur)o.selected=true; sel.appendChild(o); });
+}
+
+/* ── Render Insights panel ──────────────────── */
+function renderInsights(fullSch, balance, rate, tenure) {
+  const taxSlab = parseFloat(document.getElementById('taxSlab')?.value)||0;
+  const loanType = document.getElementById('loanType')?.value||'so';
+  const investReturn = parseFloat(document.getElementById('investReturn')?.value)||12;
+  const cmpId = parseInt(document.getElementById('cmpScenario')?.value)||0;
+  const taxCap24b = loanType==='so' ? 200000 : Infinity;
+  let html = '';
+
+  // Tax benefits
+  if (taxSlab > 0) {
+    let t24bTotal=0,t80cTotal=0;
+    const byYear={};
+    fullSch.forEach(r=>{const yr=Math.ceil(r.month/12);if(!byYear[yr])byYear[yr]={i:0,p:0};byYear[yr].i+=r.interest;byYear[yr].p+=r.principal;});
+    const rows=Object.entries(byYear).slice(0,10).map(([yr,d])=>{
+      const d24b=Math.min(d.i,taxCap24b),d80c=Math.min(d.p,150000),t24b=d24b*taxSlab/100,t80c=d80c*taxSlab/100;
+      t24bTotal+=t24b;t80cTotal+=t80c;
+      return `<tr><td>Year ${yr}</td><td>${inrCr(d.i)}</td><td>${inrCr(d24b)}</td><td>${inrCr(t24b)}</td><td>${inrCr(d.p)}</td><td>${inrCr(d80c)}</td><td>${inrCr(t80c)}</td></tr>`;
+    }).join('');
+    html+=`<div class="insight-cards">
+      <div class="icard"><p class="icard-label">Tax saved — Sec 24(b)</p><p class="icard-value green">${inrCr(t24bTotal)}</p></div>
+      <div class="icard"><p class="icard-label">Tax saved — Sec 80C</p><p class="icard-value green">${inrCr(t80cTotal)}</p></div>
+      <div class="icard"><p class="icard-label">Combined tax saving</p><p class="icard-value green">${inrCr(t24bTotal+t80cTotal)}</p></div>
+    </div>
+    <button class="insight-toggle" onclick="var t=this.nextElementSibling;t.style.display=t.style.display==='none'?'block':'none';this.textContent=t.style.display==='none'?'Show year-by-year table':'Hide year-by-year table'">Show year-by-year table</button>
+    <div style="display:none;overflow-x:auto;margin-top:8px;">
+      <table class="tax-table"><tr><th>Year</th><th>Interest</th><th>24(b) ded.</th><th>Tax saved</th><th>Principal</th><th>80C ded.</th><th>Tax saved</th></tr>
+      ${rows}${Object.keys(byYear).length>10?'<tr><td colspan="7" style="color:var(--text3)">…first 10 years shown</td></tr>':''}</table>
+    </div>
+    <hr style="border:none;border-top:0.5px solid var(--border);margin:14px 0;">`;
+  }
+
+  // Break-even vs investing
+  const r12=investReturn/12/100;
+  let totalPrepaid=0,corpus=0;
+  fullSch.forEach(r=>{if(r.extra>0){totalPrepaid+=r.extra;const mRem=fullSch.length-r.month+1;corpus+=r.extra*Math.pow(1+r12,mRem);}});
+  if (totalPrepaid>0) {
+    const mr=rate/12/100,n=tenure*12,autoEMI=balance*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);
+    const origInt=autoEMI*n-balance, actInt=fullSch.reduce((s,r)=>s+r.interest,0), saved=origInt-actInt;
+    const better=saved>=corpus;
+    html+=`<p style="font-size:12px;color:var(--text2);margin:0 0 8px;">Prepayments vs investing at ${investReturn}% p.a.</p>
+    <div class="insight-cards">
+      <div class="icard"><p class="icard-label">Total prepaid</p><p class="icard-value">${inrCr(totalPrepaid)}</p></div>
+      <div class="icard"><p class="icard-label">If invested → corpus</p><p class="icard-value">${inrCr(corpus)}</p></div>
+      <div class="icard"><p class="icard-label">Interest saved</p><p class="icard-value green">${inrCr(saved)}</p></div>
+    </div>
+    <div class="verdict-card ${better?'good':'neutral'}"><b>${better?'✓ Prepaying wins':'↗ Investing wins'}</b> — ${better?`Prepaying saved ${inrCr(saved-corpus)} more than investing at ${investReturn}%.`:`Investing at ${investReturn}% generates ${inrCr(corpus-saved)} more. Consider investing surplus instead.`}</div>
+    <hr style="border:none;border-top:0.5px solid var(--border);margin:14px 0;">`;
+  } else {
+    html+=`<p style="font-size:13px;color:var(--text3);margin:0 0 12px;">Add prepayments to see break-even vs investing analysis.</p><hr style="border:none;border-top:0.5px solid var(--border);margin:14px 0;">`;
+  }
+
+  // Scenario comparison
+  const cmpBm=getBookmarks().find(b=>b.id===cmpId);
+  if (cmpBm) {
+    const comp=runCalcOn(cmpBm.data.fields,cmpBm.data.lumps);
+    if (comp) {
+      const currMonths=fullSch.length, currInt=fullSch.reduce((s,r)=>s+r.interest,0);
+      const cW=(a,b)=>a<=b?'cmp-winner':'';
+      html+=`<p style="font-size:12px;color:var(--text2);margin:0 0 8px;">Current vs <b>${cmpBm.name}</b></p>
+      <div style="overflow-x:auto;"><table class="cmp-table">
+        <tr><th>Metric</th><th>Current</th><th>${cmpBm.name}</th></tr>
+        <tr><td>EMI</td><td>${document.getElementById('emiDisplay').textContent}</td><td>${inrCr(comp.emi)}</td></tr>
+        <tr><td>Months to close</td><td class="${cW(currMonths,comp.months)}">${currMonths} mo</td><td class="${cW(comp.months,currMonths)}">${comp.months} mo</td></tr>
+        <tr><td>Total interest</td><td class="${cW(currInt,comp.totalInterest)}">${inrCr(currInt)}</td><td class="${cW(comp.totalInterest,currInt)}">${inrCr(comp.totalInterest)}</td></tr>
+        <tr><td>Interest saved</td><td>${document.getElementById('interestSaved').textContent}</td><td>${inrCr(comp.interestSaved)}</td></tr>
+      </table></div>`;
+    }
+  } else {
+    html+=`<p style="font-size:13px;color:var(--text3);margin:0;">Save and select a scenario to see a side-by-side comparison.</p>`;
+  }
+
+  const panel=document.getElementById('insightsPanel'), content=document.getElementById('insightsContent');
+  if(panel&&content){content.innerHTML=html;panel.style.display='block';const body=document.getElementById('insightsBody');if(body)body.style.maxHeight=(body.scrollHeight+2000)+'px';}
+}
+
 /* ── Bookmarks ─────────────────────────────────── */
+
 function toggleBookmarkPanel() {
   const panel = document.getElementById('bmPanel');
   panel.classList.toggle('open');
@@ -217,13 +459,23 @@ function getBookmarks() {
   try { return JSON.parse(localStorage.getItem(BM_KEY)) || []; } catch(e) { return []; }
 }
 
+function toggleSaveForm() {
+  const form = document.getElementById('bmSaveForm');
+  const input = document.getElementById('bmNameInput');
+  const visible = form.style.display !== 'none';
+  form.style.display = visible ? 'none' : 'flex';
+  if (!visible) {
+    input.value = 'Scenario ' + (getBookmarks().length + 1);
+    input.focus();
+    input.select();
+  }
+}
+
 function saveBookmark() {
-  const name = prompt('Name this scenario:', 'Scenario ' + (getBookmarks().length + 1));
-  if (!name || !name.trim()) return;
-  const data = {
-    fields: {},
-    lumps: []
-  };
+  const input = document.getElementById('bmNameInput');
+  const name = input ? input.value.trim() : '';
+  if (!name) return;
+  const data = { fields: {}, lumps: [] };
   ['loanAmt','outstanding','rate','tenure','emi','stepupPct','extra','yearlyLump','yearlyMonth','yearlyStart','yearlyGrowth'].forEach(id => {
     const el = document.getElementById(id);
     if (el) data.fields[id] = el.value;
@@ -242,8 +494,13 @@ function saveBookmark() {
   bms.unshift({ id: Date.now(), name: name.trim(), savedAt: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}), closureDate, interestSaved, emiDisplay, data });
   try { localStorage.setItem(BM_KEY, JSON.stringify(bms)); } catch(e) {}
   renderBookmarks();
+  populateCmpDropdown();
+  // Close inline form
+  const form = document.getElementById('bmSaveForm');
+  if (form) form.style.display = 'none';
+  if (input) input.value = '';
   const ind = document.getElementById('saveIndicator');
-  if (ind) { const prev = ind.textContent; ind.textContent = '✓ Scenario saved'; ind.classList.add('visible'); clearTimeout(ind._t); ind._t = setTimeout(() => { ind.classList.remove('visible'); ind.textContent = prev || '✓ Saved'; }, 2000); }
+  if (ind) { const prev = ind.textContent; ind.textContent = '\u2713 Scenario saved'; ind.classList.add('visible'); clearTimeout(ind._t); ind._t = setTimeout(() => { ind.classList.remove('visible'); ind.textContent = prev || '\u2713 Saved'; }, 2000); }
 }
 
 function renderBookmarks() {
@@ -481,6 +738,7 @@ function calculate() {
   document.getElementById('totalInterestNew').textContent = inrCr(totalInterest);
   document.getElementById('totalInterestOrig').textContent = inrCr(origTotalInterest);
   document.getElementById('results').style.display = 'block';
+  renderInsights(fullSchedule, balance, rate, tenure);
 
   showAll = false; renderTable();
   document.getElementById('toggleBtn').textContent = 'Show all months';
@@ -564,18 +822,27 @@ URL.revokeObjectURL(url);
 }
 
 window.onload = function() {
+  // Apply saved theme
+  try { const t = localStorage.getItem('hlc_theme'); if (t === 'dark') applyTheme(true); } catch(e) {}
+
   const fieldIds = ['loanAmt','outstanding','rate','tenure','emi','stepupPct','extra','yearlyLump','yearlyMonth','yearlyStart','yearlyGrowth'];
+  const insightIds = ['taxSlab','loanType','investReturn','cmpScenario'];
   const restored = loadFromLocalStorage();
-  fieldIds.forEach(id => {
+
+  [...fieldIds, ...insightIds].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.addEventListener('input', () => { calculate(); saveToLocalStorage(); });
-    el.addEventListener('change', () => { calculate(); saveToLocalStorage(); });
+    el.addEventListener('input', () => { calculate(); if (fieldIds.includes(id)) saveToLocalStorage(); });
+    el.addEventListener('change', () => { calculate(); if (fieldIds.includes(id)) saveToLocalStorage(); });
   });
+
+  populateCmpDropdown();
   calculate();
+  initSectionStates();
+
   if (restored) {
     const ind = document.getElementById('saveIndicator');
-    if (ind) { ind.textContent = '✓ Restored'; ind.classList.add('visible'); clearTimeout(ind._t); ind._t = setTimeout(() => { ind.classList.remove('visible'); ind.textContent = '✓ Saved'; }, 2500); }
+    if (ind) { ind.textContent = '\u2713 Restored'; ind.classList.add('visible'); clearTimeout(ind._t); ind._t = setTimeout(() => { ind.classList.remove('visible'); ind.textContent = '\u2713 Saved'; }, 2500); }
   }
 };
 </script>
