@@ -63,6 +63,25 @@
   .save-indicator.visible { opacity: 1; }
   .clear-btn { font-size: 12px; color: #888780; background: none; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 5px 12px; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
   .clear-btn:hover { color: #E24B4A; border-color: #E24B4A; }
+  /* Bookmarks */
+  .bm-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #185FA5; background: #E6F1FB; border: 0.5px solid rgba(55,138,221,0.3); border-radius: 8px; padding: 5px 12px; cursor: pointer; transition: background 0.2s; }
+  .bm-btn:hover { background: #B5D4F4; }
+  .bm-panel { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: none; }
+  .bm-panel.open { display: block; }
+  .bm-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .bm-panel-title { font-size: 13px; font-weight: 500; color: #5f5e5a; text-transform: uppercase; letter-spacing: 0.04em; margin: 0; }
+  .bm-empty { font-size: 13px; color: #888780; padding: 8px 0; }
+  .bm-list { display: flex; flex-direction: column; gap: 8px; }
+  .bm-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f7f6f2; border-radius: 10px; padding: 10px 14px; transition: background 0.15s; }
+  .bm-card:hover { background: #f1efe8; }
+  .bm-card-left { flex: 1; min-width: 0; }
+  .bm-name { font-size: 14px; font-weight: 500; color: #1a1a18; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bm-meta { font-size: 11px; color: #888780; margin-top: 2px; }
+  .bm-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .bm-load-btn { font-size: 12px; font-weight: 500; color: #185FA5; background: #E6F1FB; border: none; border-radius: 7px; padding: 5px 12px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+  .bm-load-btn:hover { background: #B5D4F4; }
+  .bm-del-btn { font-size: 16px; color: #888780; background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 6px; line-height: 1; transition: color 0.15s; }
+  .bm-del-btn:hover { color: #E24B4A; }
 </style>
 </head>
 <body>
@@ -71,8 +90,23 @@
   <h1>Home loan calculator</h1>
   <div class="header-controls">
     <span class="save-indicator" id="saveIndicator">✓ Saved</span>
+    <button class="bm-btn" id="bookmarkToggleBtn" onclick="toggleBookmarkPanel()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 1.5h9v10.5l-4.5-2.5L2 12V1.5z" stroke="#185FA5" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg>
+      Scenarios
+    </button>
     <button class="clear-btn" id="clearBtn" onclick="clearSavedData()" style="display:none;">Clear saved data</button>
   </div>
+</div>
+
+<div class="bm-panel" id="bmPanel">
+  <div class="bm-panel-header">
+    <p class="bm-panel-title">Saved scenarios</p>
+    <button class="bm-btn" onclick="saveBookmark()">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="#185FA5" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Save current
+    </button>
+  </div>
+  <div id="bmList"><p class="bm-empty">No saved scenarios yet. Configure your inputs and click "Save current".</p></div>
 </div>
 
 <div class="section">
@@ -170,6 +204,92 @@ const inrCr = v => {
 
 let chart, fullSchedule = [], showAll = false, lumpRows = [];
 const LS_KEY = 'indianHomeLoanCalc_v1';
+const BM_KEY = 'indianHomeLoanCalc_bookmarks_v1';
+
+/* ── Bookmarks ─────────────────────────────────── */
+function toggleBookmarkPanel() {
+  const panel = document.getElementById('bmPanel');
+  panel.classList.toggle('open');
+  renderBookmarks();
+}
+
+function getBookmarks() {
+  try { return JSON.parse(localStorage.getItem(BM_KEY)) || []; } catch(e) { return []; }
+}
+
+function saveBookmark() {
+  const name = prompt('Name this scenario:', 'Scenario ' + (getBookmarks().length + 1));
+  if (!name || !name.trim()) return;
+  const data = {
+    fields: {},
+    lumps: []
+  };
+  ['loanAmt','outstanding','rate','tenure','emi','stepupPct','extra','yearlyLump','yearlyMonth','yearlyStart','yearlyGrowth'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data.fields[id] = el.value;
+  });
+  lumpRows.forEach(id => {
+    data.lumps.push({
+      amt: document.getElementById('la-'+id)?.value || '0',
+      mo: document.getElementById('lm-'+id)?.value || '1',
+      label: document.getElementById('ll-'+id)?.value || ''
+    });
+  });
+  const closureDate = document.getElementById('closureDate')?.textContent || '';
+  const interestSaved = document.getElementById('interestSaved')?.textContent || '';
+  const emiDisplay = document.getElementById('emiDisplay')?.textContent || '';
+  const bms = getBookmarks();
+  bms.unshift({ id: Date.now(), name: name.trim(), savedAt: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}), closureDate, interestSaved, emiDisplay, data });
+  try { localStorage.setItem(BM_KEY, JSON.stringify(bms)); } catch(e) {}
+  renderBookmarks();
+  const ind = document.getElementById('saveIndicator');
+  if (ind) { const prev = ind.textContent; ind.textContent = '✓ Scenario saved'; ind.classList.add('visible'); clearTimeout(ind._t); ind._t = setTimeout(() => { ind.classList.remove('visible'); ind.textContent = prev || '✓ Saved'; }, 2000); }
+}
+
+function renderBookmarks() {
+  const bms = getBookmarks();
+  const container = document.getElementById('bmList');
+  if (!bms.length) { container.innerHTML = '<p class="bm-empty">No saved scenarios yet. Configure your inputs and click "Save current".</p>'; return; }
+  container.innerHTML = '';
+  const list = document.createElement('div'); list.className = 'bm-list';
+  bms.forEach(bm => {
+    const card = document.createElement('div'); card.className = 'bm-card';
+    const meta = [bm.emiDisplay && ('EMI ' + bm.emiDisplay), bm.closureDate && ('Closes ' + bm.closureDate), bm.interestSaved && bm.interestSaved !== '—' && bm.interestSaved].filter(Boolean).join(' · ');
+    card.innerHTML = `
+      <div class="bm-card-left">
+        <div class="bm-name">${bm.name}</div>
+        <div class="bm-meta">${meta ? meta + ' &nbsp;·&nbsp; ' : ''}Saved ${bm.savedAt}</div>
+      </div>
+      <div class="bm-actions">
+        <button class="bm-load-btn" onclick="loadBookmark(${bm.id})">Load</button>
+        <button class="bm-del-btn" title="Delete" onclick="deleteBookmark(${bm.id})">×</button>
+      </div>`;
+    list.appendChild(card);
+  });
+  container.appendChild(list);
+}
+
+function loadBookmark(id) {
+  const bm = getBookmarks().find(b => b.id === id);
+  if (!bm) return;
+  const { data } = bm;
+  if (data.fields) {
+    Object.entries(data.fields).forEach(([fid, val]) => { const el = document.getElementById(fid); if (el) el.value = val; });
+  }
+  // Replace lump rows
+  [...lumpRows].forEach(rid => removeLump(rid));
+  if (data.lumps && data.lumps.length) data.lumps.forEach(l => addLumpRow(l.amt, l.mo, l.label));
+  calculate();
+  saveToLocalStorage();
+  const ind = document.getElementById('saveIndicator');
+  if (ind) { ind.textContent = '✓ Loaded: ' + bm.name; ind.classList.add('visible'); clearTimeout(ind._t); ind._t = setTimeout(() => { ind.classList.remove('visible'); ind.textContent = '✓ Saved'; }, 2500); }
+}
+
+function deleteBookmark(id) {
+  const bms = getBookmarks().filter(b => b.id !== id);
+  try { localStorage.setItem(BM_KEY, JSON.stringify(bms)); } catch(e) {}
+  renderBookmarks();
+}
 
 function saveToLocalStorage() {
   const data = {
